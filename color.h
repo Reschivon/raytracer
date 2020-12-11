@@ -6,7 +6,10 @@
 #include <iostream>
 
 olc::Pixel to_pixel (color pixel_color){
-    return *new olc::Pixel(pixel_color[0], pixel_color[1], pixel_color[2]);
+    return *new olc::Pixel(
+            255 * pixel_color[0],
+            255 * pixel_color[1],
+            255 * pixel_color[2]);
 }
 
 #endif
