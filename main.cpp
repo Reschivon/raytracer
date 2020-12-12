@@ -20,7 +20,7 @@ public:
     }
 
     bool OnUserUpdate(float fElapsedTime) override {
-        auto focal_length = 1.0;
+        auto focal_length = 0.7;
         auto viewport_width = 2.0;
         auto viewport_height = viewport_width * ScreenHeight() * 1.0 /ScreenWidth();
 
@@ -43,35 +43,39 @@ public:
                 // we just want the background, so the ray should not be translated. Subtract origin
                 ray r(origin, lower_left + hori_ratio * horizontal + vert_ratio * vertical - origin);
 
-                // std::cout << r.direction() << std::endl;
-
                 color pixel_color = ray_color(r);
-                Draw(x, y, to_pixel(pixel_color));
+                Draw(x, ScreenHeight() - y, to_pixel(pixel_color));
             }
         }
         return true;
     }
 
     color ray_color(const ray& r) {
-        if (hit_sphere(point3(0,0,-1), 0.5, r))
-            return color(1, 0, 0);
+        auto t = hit_sphere(point3(0,0,-1), 0.5, r);
+        if (t > 0.0) {
+            vec3 normal = unit_vector(r.at(t) - point3(0, 0, -1));
+            return 0.5 * color(normal.x() + 1, normal.y() + 1, normal.z() + 1);
+        }
 
         vec3 unit_direction = unit_vector(r.direction());
-        auto t = 0.5*(unit_direction.y() + 1.0);
-        return (1.0-t) * color(0.5, 0.7, 1.0) + // light blue
-                    t  * color(1.0, 1.0, 1.0);  // white
+        t = 0.5*(unit_direction.y() + 1.0);
+        return        t * color(0.5, 0.7, 1.0) + // light blue
+               (1.0 - t)* color(1.0, 1.0, 1.0);  // white
     }
 
-    bool hit_sphere(point3 center, double radius, ray r){
-        // difference between dot() and *
-        // dot does * also but it sums <x y z> into a double
+    double hit_sphere(point3 center, double radius, ray r){
         auto a_minus_c = r.origin() - center;
-        auto a = dot(r.direction(), r.direction());
-        auto b = 2.0 * dot(r.direction(), a_minus_c);
-        auto c = dot(a_minus_c, a_minus_c) - radius * radius;
+        auto a = r.direction().squared_length();
+        auto half_b = dot(r.direction(), a_minus_c);
+        auto c = a_minus_c.squared_length() - radius * radius;
 
-        auto discriminant = b * b - 4 * a * c;
-        return discriminant > 0;
+        auto discriminant = half_b * half_b - a * c;
+
+        if(discriminant > 0){
+            return (-half_b - sqrt(discriminant) ) / a;
+        }else{
+            return -1.0;
+        }
     }
 };
 
