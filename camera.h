@@ -9,42 +9,52 @@
 
 class camera {
 public:
-    camera (double h, double w) {
+    camera (double h, double w, double vfov) {
         height = h;
         width = w;
+        this->vfov = vfov;
 
-        // Camera Settings
-        focal_length = 0.7;
-        viewport_width = 2.0;
-        viewport_height = viewport_width * height * 1.0 / width;
-
-        // where is the camera
         origin = point3(0, 0, 0);
+        lookat = point3(0,0,-1);
 
         recalculate();
     }
 
     void recalculate() {
+        auto vup = vec3(0, 1, 0);
+
+        // Camera Settings
+        auto theta = degrees_to_radians(vfov);
+        auto h = tan(theta/2);
+        viewport_width = 2.0 * h;
+        viewport_height = viewport_width * height * 1.0 / width;
+
+        auto w = unit_vector(origin - lookat);
+        auto u = unit_vector(cross(vup, w));
+        auto v = cross(w, u);
+
         // directional vectors
-        horizontal = vec3(viewport_width, 0, 0);
-        vertical = vec3(0, viewport_height, 0);
+        horizontal = viewport_width * u;
+        vertical = viewport_height * v;
         // lower left of rayshooting plane
-        lower_left = origin - horizontal/2 - vertical/2 - vec3(0, 0, focal_length);
+        lower_left = origin - horizontal/2 - vertical/2 - w;
 
     }
 
-    ray get_ray(double hori_ratio, double vert_ratio){
+    ray get_ray(double hori_ratio, double vert_ratio) const {
         return ray(origin, lower_left + hori_ratio * horizontal + vert_ratio * vertical - origin);
     }
 
     point3 origin;
+    point3 lookat;
 private:
     // the projection plane parameters
     point3 lower_left;
     vec3 horizontal;
     vec3 vertical;
 
-    double focal_length;
+    double vfov; //vertical fov
+
     double viewport_width;
     double viewport_height;
 
