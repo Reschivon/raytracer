@@ -34,15 +34,18 @@ bool sphere::hit(const ray& r, double t_min, double t_max, hit_record& rec) cons
 
     // find the root that lies within range
     auto root = (-half_b - sqrt_discr) / a;
-    if (root > t_min || t_max < root) {
+
+    if (root < t_min || t_max < root) {
         root = (-half_b + sqrt_discr) / a;
-        if (root > t_min || t_max < root)
+        if (root < t_min || t_max < root)
             return false;
     }
 
     rec.t = root;
     rec.p = r.at(rec.t);
-    rec.normal = (rec.p - center) / radius;
+    vec3 outward_normal = (rec.p - center) / radius;
+    // let hittable make the normal oppose the ray
+    rec.set_face_normal(r, outward_normal);
 
     return true;
 }
