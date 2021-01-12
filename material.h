@@ -1,3 +1,4 @@
+/*
 //
 // Created by Administrator on 12/11/2020.
 //
@@ -94,3 +95,4 @@ private:
 };
 
 #endif //RAYTRACER_MATERIAL_H
+*/

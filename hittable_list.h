@@ -19,27 +19,26 @@ public:
     void clear() {objects.clear(); }
     void add(shared_ptr<hittable> object) { objects.push_back(object); }
 
-    virtual bool hit (
-            const ray& r, double t_min, double t_max, hit_record& rec) const override;
+    virtual void distance (const vec3& r, hit_record& re) const override;
 
 public:
     std::vector<shared_ptr<hittable>> objects;
 };
 
-bool hittable_list::hit(const ray &r, double t_min, double t_max, hit_record &rec) const {
-    hit_record temp_rec;
-    bool hit_anything = false;
-    auto closest_so_far = t_max;
+void hittable_list::distance(const vec3 &r, hit_record &rec) const {
+    double closest_so_far = std::numeric_limits<double>().max();
+    bool has_intersected = false;
 
     for(const auto& object : objects){
-        if(object->hit(r, t_min, closest_so_far, temp_rec)) {
-            hit_anything = true;
-            closest_so_far = temp_rec.t;
-            rec = temp_rec;
+        hit_record temp_record;
+        object->distance(r, temp_record);
+        if(temp_record.distance > 0) {
+            closest_so_far = std::min(closest_so_far, temp_record.distance);
+            has_intersected = true;
         }
     }
 
-    return hit_anything;
+    rec.distance = closest_so_far;
 }
 
 
