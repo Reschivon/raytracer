@@ -22,6 +22,9 @@ public:
 };
 
 bool sphere::hit(const ray& r, double t_min, double t_max, hit_record& rec) const {
+
+    // quadratic intersection stuff...
+    // etc etc
     auto a_minus_c = r.origin() - center;
     auto a = r.direction().squared_length();
     auto half_b = dot(r.direction(), a_minus_c);

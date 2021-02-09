@@ -56,6 +56,40 @@ hittable_list random_scene() {
     return world;
 }
 
+hittable_list test_scene() {
+    hittable_list world;
+
+    auto material_ground = make_shared<lambertian>(color(0.8, 0.8, 0.0));
+    auto material_center = make_shared<lambertian>(color(0.1, 0.2, 0.5));
+    auto material_left = make_shared<dielectric>(1.5);
+    auto material_right = make_shared<metal>(color(0.8, 0.6, 0.2), 1.0);
+
+    world.add(make_shared<sphere>(point3(0.0, -100.5, -1.0), 100.0, material_ground));
+    world.add(make_shared<sphere>(point3(0.0, 0.0, -1.0), 0.5, material_center));
+    world.add(make_shared<sphere>(point3(-1.0, 0.0, -1.0), 0.5, material_left));
+    world.add(make_shared<sphere>(point3(-1.0, 0.0, -1.0), -0.4, material_left));
+    world.add(make_shared<sphere>(point3(1.0, 0.0, -1.0), 0.5, material_right));
+
+    return world;
+}
+
+hittable_list test_scene2() {
+    hittable_list world;
+
+    auto material_ground = make_shared<lambertian>(color(0.8, 0.8, 0.0));
+    auto material_center = make_shared<lambertian>(color(0.1, 0.2, 0.5));
+    auto material_left   = make_shared<dielectric>(1.5);
+    auto material_right  = make_shared<metal>(color(0.8, 0.6, 0.2), 0.0);
+
+    world.add(make_shared<sphere>(point3( 0.0, -100.5, -1.0), 100.0, material_ground));
+    world.add(make_shared<sphere>(point3( 0.0,    0.0, -1.0),   0.5, material_center));
+    world.add(make_shared<sphere>(point3(-1.0,    0.0, -1.0),   0.5, material_left));
+    world.add(make_shared<sphere>(point3(-1.0,    0.0, -1.0), -0.45, material_left));
+    world.add(make_shared<sphere>(point3( 1.0,    0.0, -1.0),   0.5, material_right));
+
+    return world;
+}
+
 class raycaster : public olc::PixelGameEngine
 {
 public:
@@ -64,11 +98,11 @@ public:
 
     }
     // World
-    hittable_list world = random_scene();
+    hittable_list world = test_scene(); //random_scene();
 
     // Image
-    const int samples_per_pixel = 2; //1
-    const int max_depth = 5; //4
+    const int samples_per_pixel = 15; //1
+    const int max_depth = 10; //4
     const int height;
     const int width;
     // Camera
@@ -77,27 +111,7 @@ public:
 public:
     bool OnUserCreate() override
     {
-//        auto material_ground = make_shared<lambertian>(color(0.8, 0.8, 0.0));
-//        auto material_center = make_shared<lambertian>(color(0.1, 0.2, 0.5));
-//        auto material_left   = make_shared<dielectric>(1.5);
-//        auto material_right  = make_shared<metal>(color(0.8, 0.6, 0.2), 1.0);
 
-//        world.add(make_shared<sphere>(point3( 0.0, -100.5, -1.0), 100.0, material_ground));
-//        world.add(make_shared<sphere>(point3( 0.0,    0.0, -1.0),   0.5, material_center));
-//        world.add(make_shared<sphere>(point3(-1.0,    0.0, -1.0),   0.5, material_left));
-//        world.add(make_shared<sphere>(point3(-1.0,    0.0, -1.0),  -0.4, material_left));
-//        world.add(make_shared<sphere>(point3( 1.0,    0.0, -1.0),   0.5, material_right));
-
-//        auto material_ground = make_shared<lambertian>(color(0.8, 0.8, 0.0));
-//        auto material_center = make_shared<lambertian>(color(0.1, 0.2, 0.5));
-//        auto material_left   = make_shared<dielectric>(1.5);
-//        auto material_right  = make_shared<metal>(color(0.8, 0.6, 0.2), 0.0);
-//
-//        world.add(make_shared<sphere>(point3( 0.0, -100.5, -1.0), 100.0, material_ground));
-//        world.add(make_shared<sphere>(point3( 0.0,    0.0, -1.0),   0.5, material_center));
-//        world.add(make_shared<sphere>(point3(-1.0,    0.0, -1.0),   0.5, material_left));
-//        world.add(make_shared<sphere>(point3(-1.0,    0.0, -1.0), -0.45, material_left));
-//        world.add(make_shared<sphere>(point3( 1.0,    0.0, -1.0),   0.5, material_right));
 
         return true;
     }
@@ -105,7 +119,7 @@ public:
     bool OnUserUpdate(float fElapsedTime) override {
         // called once per frame
         for (int x = 0; x < ScreenWidth(); x++) {
-            std::cout << "column " << x << " of " << ScreenWidth() << std::endl;
+            //std::cout << "column " << x << " of " << ScreenWidth() << std::endl;
             for (int y = 0; y < ScreenHeight(); y++) {
                 color pixel_color(0, 0, 0);
                 for(int s = 0; s < samples_per_pixel; s++) {
@@ -119,17 +133,22 @@ public:
             }
         }
         if(IsFocused()){
+            auto vup = vec3(0, 1, 0);
+            auto forward = unit_vector(cam.origin - cam.lookat);
+            auto right = unit_vector(cross(vup, forward));
+
             if(GetKey(olc::Key::W).bHeld) {
-                cam.origin += vec3(0, 0, -0.1);
+
+                cam.origin -= forward;
             }
             if(GetKey(olc::Key::S).bHeld) {
-                cam.origin += vec3(0, 0, 0.1);
+                cam.origin += forward;
             }
             if(GetKey(olc::Key::A).bHeld) {
-                cam.origin += vec3(-0.1, 0, 0);
+                cam.origin += -right;
             }
             if(GetKey(olc::Key::D).bHeld) {
-                cam.origin += vec3(0.1, 0, 0);
+                cam.origin += right;
             }
             if(GetKey(olc::Key::SPACE).bHeld) {
                 cam.origin += vec3(0, 0.1, 0);
@@ -167,8 +186,8 @@ public:
 
 int main()
 {
-    const int height = 4*120;
-    const int width = 4*180;
+    const int height = 1*120;
+    const int width = 1*180;
 
     raycaster window(camera(height, width, 40.0), height, width);
 
@@ -177,7 +196,7 @@ int main()
 
     window.cam.recalculate();
 
-    if (window.Construct(width, height, 1, 1))
+    if (window.Construct(width, height, 2, 2))
         window.Start();
 
     return 0;
