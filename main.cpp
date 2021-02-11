@@ -8,6 +8,8 @@
 #include "camera.h"
 #include "material.h"
 #include "bvh_node.h"
+#include "diffuse_light.h"
+#include "xy_rect.h"
 #include <iostream>
 
 hittable_list random_scene() {
@@ -98,6 +100,28 @@ hittable_list test_scene2() {
     return world;
 }
 
+hittable_list simple_light() {
+    hittable_list objects;
+
+    auto pertext = make_shared<metal>(color(0.7, 0.4, 0.5), 0.5);
+    auto pertextAlt = make_shared<metal>(color(1.0, 0.1, 0.1), 0.5);
+    auto green = make_shared<metal>(color(0.9, 0.5, 0.0), 1.2);
+    objects.add(make_shared<sphere>(point3(0,-1000,0), 1000, pertext));
+    objects.add(make_shared<sphere>(point3(0,2,0), 2, green));
+    objects.add(make_shared<sphere>(point3(-2,2,5), 4, pertextAlt));
+
+    objects.add(make_shared<sphere>(point3(8,4,3), 2, make_shared<dielectric>(1.5)));
+    objects.add(make_shared<sphere>(point3(-8,4,3), 3, make_shared<dielectric>(1.5)));
+
+    auto difflight = make_shared<diffuse_light>(color(5.2,5.2,3.2));
+    auto difflightBlue = make_shared<diffuse_light>(color(0.7, 2,0.7));
+    objects.add(make_shared<xy_rect>(3, 5, 1, 3, -2, difflight));
+    objects.add(make_shared<sphere>(point3(0,6,0), 1, difflightBlue));
+    objects.add(make_shared<sphere>(point3(13,6,0), 1, difflight));
+
+    return objects;
+}
+
 class raycaster : public olc::PixelGameEngine
 {
 public:
@@ -105,7 +129,7 @@ public:
         sAppName = "RayTracer 0.1";
     }
     // World
-    bvh_node curr_world = bvh_node(test_scene(), 0, 0); //random_scene();
+    hittable_list curr_world = simple_light(); //random_scene();
 
     // Image
     int samples_per_pixel;
@@ -114,6 +138,8 @@ public:
     const int width;
     // Camera
     camera cam;
+
+    color background;
 
 public:
     bool OnUserCreate() override
@@ -132,7 +158,7 @@ public:
                     auto vert_ratio = (y + random_double()) / (ScreenHeight() - 1);
 
                     ray r = cam.get_ray(hori_ratio, vert_ratio);
-                    pixel_color += ray_color(r, color(0.5, 0.7, 1.0), curr_world, max_depth);
+                    pixel_color += ray_color(r, background, curr_world, max_depth);
                 }
                 Draw(x, ScreenHeight() - 1 - y, to_pixel(pixel_color, samples_per_pixel));
             }
@@ -155,6 +181,8 @@ public:
             if(GetKey(olc::Key::D).bHeld) {
                 cam.origin += right;
             }
+            cam.origin += right;
+
             if(GetKey(olc::Key::SPACE).bHeld) {
                 cam.origin += vec3(0, 0.1, 0);
             }
@@ -178,14 +206,13 @@ public:
         // metal
         ray scattered;
         color attenuation;
-        //color emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
+        color emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
 
-        rec.mat_ptr->scatter(r, rec, attenuation, scattered);
-        //if(!rec.mat_ptr->scatter(r, rec, attenuation, scattered))
-            //return emitted;
+        if (!rec.mat_ptr->scatter(r, rec, attenuation, scattered)) {
+            return emitted;
+        }
 
-        //return emitted * attenuation * ray_color(scattered, background, world, depth-1);
-        return attenuation * ray_color(scattered, background, world, depth-1);
+        return emitted + attenuation * ray_color(scattered, background, world, depth-1);
 
         /*vec3 unit_direction = unit_vector(r.direction());
         auto t = 0.5*(unit_direction.y() + 1.0);
@@ -197,23 +224,25 @@ public:
 
 int main()
 {
-    const int height = 2*120;
-    const int width = 2*180;
+    const int height = 1.3*108;
+    const int width = 1.3*192;
 
-    point3 look_from(5,2,3);
-    point3 look_at(0,0,0);
+    point3 look_from(26,7,6);
+    point3 look_at(0,2,0);
 
-    raycaster window(camera(height, width, 40.0, 0.0, (look_from-look_at).length()), height, width);
+    raycaster window(camera(height, width, 40.0, 0.0, (look_from-look_at).length(), 0, 0), height, width);
 
-    window.samples_per_pixel = 1; //4
-    window.max_depth = 5; //25
+    window.samples_per_pixel = 20; //4
+    window.max_depth = 10; //25
+    window.background = color(0,0,0);
+    window.background = color(0.5, 0.7, 1.0);
 
     window.cam.origin = look_from;
     window.cam.lookat = look_at;
 
     window.cam.recalculate();
 
-    if (window.Construct(width, height, 1, 1))
+    if (window.Construct(width, height, 2, 2))
         window.Start();
 
     return 0;

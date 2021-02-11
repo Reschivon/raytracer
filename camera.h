@@ -9,7 +9,7 @@
 
 class camera {
 public:
-    camera (double h, double w, double vfov, double aperture, double f_dist) {
+    camera (double h, double w, double vfov, double aperture, double f_dist, double _time0, double _time1) {
         height = h;
         width = w;
         this->vfov = vfov;
@@ -49,7 +49,8 @@ public:
         vec3 offset = u * random.x() + v * random.y();
         return ray(
                 origin + offset,
-                lower_left + hori_ratio * horizontal + vert_ratio * vertical - origin - offset);
+                lower_left + hori_ratio * horizontal + vert_ratio * vertical - origin - offset,
+                random_double(time0, time1));
     }
 
     point3 origin;
@@ -66,6 +67,9 @@ private:
     double viewport_width;
     double viewport_height;
     double lens_radius, focus_dist;
+
+    double time0 = 0;
+    double time1 = 0;
 
     int height;
     int width;
