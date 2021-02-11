@@ -12,6 +12,10 @@ struct hit_record;
 
 class material {
 public:
+    virtual color emitted(double u, double v, const point3& p) const {
+        return color(1,1,1);
+    }
+
     virtual bool scatter(
                 const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered
             ) const = 0;
@@ -80,7 +84,6 @@ public:
         scattered = ray(rec.p, direction);
         return true;
     }
-
 
     double ir; // index of refraction
 
