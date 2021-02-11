@@ -100,24 +100,25 @@ hittable_list test_scene2() {
     return world;
 }
 
-hittable_list simple_light() {
+hittable_list night_glassy() {
     hittable_list objects;
 
-    auto pertext = make_shared<metal>(color(0.7, 0.4, 0.5), 0.5);
-    auto pertextAlt = make_shared<metal>(color(1.0, 0.1, 0.1), 0.5);
-    auto green = make_shared<metal>(color(0.9, 0.5, 0.0), 1.2);
-    objects.add(make_shared<sphere>(point3(0,-1000,0), 1000, pertext));
-    objects.add(make_shared<sphere>(point3(0,2,0), 2, green));
-    objects.add(make_shared<sphere>(point3(-2,2,5), 4, pertextAlt));
+    auto ground = make_shared<metal>(color(0.7, 0.4, 0.5), 0.5);
+    auto red_plastic = make_shared<metal>(color(1.0, 0.1, 0.1), 0.5);
+    auto gold = make_shared<metal>(color(0.9, 0.5, 0.0), 1.2);
+
+    objects.add(make_shared<sphere>(point3(0,-1000,0), 1000, ground));
+    objects.add(make_shared<sphere>(point3(0,2,0), 2, gold));
+    objects.add(make_shared<sphere>(point3(-2,2,5), 4, red_plastic));
 
     objects.add(make_shared<sphere>(point3(8,4,3), 2, make_shared<dielectric>(1.5)));
     objects.add(make_shared<sphere>(point3(-8,4,3), 3, make_shared<dielectric>(1.5)));
 
-    auto difflight = make_shared<diffuse_light>(color(5.2,5.2,3.2));
-    auto difflightBlue = make_shared<diffuse_light>(color(0.7, 2,0.7));
-    objects.add(make_shared<xy_rect>(3, 5, 1, 3, -2, difflight));
-    objects.add(make_shared<sphere>(point3(0,6,0), 1, difflightBlue));
-    objects.add(make_shared<sphere>(point3(13,6,0), 1, difflight));
+    auto light = make_shared<diffuse_light>(color(5.2, 5.2, 3.2));
+    auto light_green = make_shared<diffuse_light>(color(0.7, 2, 0.7));
+    objects.add(make_shared<xy_rect>(3, 5, 1, 3, -2, light));
+    objects.add(make_shared<sphere>(point3(0,6,0), 1, light_green));
+    objects.add(make_shared<sphere>(point3(13,6,0), 1, light));
 
     return objects;
 }
@@ -129,7 +130,8 @@ public:
         sAppName = "RayTracer 0.1";
     }
     // World
-    hittable_list curr_world = simple_light(); //random_scene();
+    // bvh
+    hittable_list curr_world = night_glassy(); //random_scene();
 
     // Image
     int samples_per_pixel;
@@ -181,13 +183,13 @@ public:
             if(GetKey(olc::Key::D).bHeld) {
                 cam.origin += right;
             }
-            cam.origin += right;
+            // cam.origin += right;
 
             if(GetKey(olc::Key::SPACE).bHeld) {
-                cam.origin += vec3(0, 0.1, 0);
+                cam.origin += vec3(0, 0.2, 0);
             }
             if(GetKey(olc::Key::SHIFT).bHeld) {
-                cam.origin += vec3(0, -0.1, 0);
+                cam.origin += vec3(0, -0.2, 0);
             }
             cam.recalculate();
         }
@@ -224,16 +226,16 @@ public:
 
 int main()
 {
-    const int height = 1.3*108;
-    const int width = 1.3*192;
+    const int height = 1*108;
+    const int width = 1*192;
 
     point3 look_from(26,7,6);
     point3 look_at(0,2,0);
 
     raycaster window(camera(height, width, 40.0, 0.0, (look_from-look_at).length(), 0, 0), height, width);
 
-    window.samples_per_pixel = 20; //4
-    window.max_depth = 10; //25
+    window.samples_per_pixel = 10; //20
+    window.max_depth = 10; //10
     window.background = color(0,0,0);
     window.background = color(0.5, 0.7, 1.0);
 
