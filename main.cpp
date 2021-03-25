@@ -10,7 +10,10 @@
 #include "bvh_node.h"
 #include "diffuse_light.h"
 #include "xy_rect.h"
+#include "triangle.h"
+#include "FastNoiseLite.h"
 #include <iostream>
+#include <vector>
 
 hittable_list random_scene() {
     hittable_list world;
@@ -107,6 +110,7 @@ hittable_list night_glassy() {
     auto red_plastic = make_shared<metal>(color(1.0, 0.1, 0.1), 0.5);
     auto gold = make_shared<metal>(color(0.9, 0.5, 0.0), 1.2);
 
+
     objects.add(make_shared<sphere>(point3(0,-1000,0), 1000, ground));
     objects.add(make_shared<sphere>(point3(0,2,0), 2, gold));
     objects.add(make_shared<sphere>(point3(-2,2,5), 4, red_plastic));
@@ -116,9 +120,74 @@ hittable_list night_glassy() {
 
     auto light = make_shared<diffuse_light>(color(5.2, 5.2, 3.2));
     auto light_green = make_shared<diffuse_light>(color(0.7, 2, 0.7));
+
+    objects.add(make_shared<triangle>(
+            vec3(-10, 1 ,10),
+            vec3(-10, 1, -10),
+            vec3(10, 1, 0), gold));
+
     objects.add(make_shared<xy_rect>(3, 5, 1, 3, -2, light));
     objects.add(make_shared<sphere>(point3(0,6,0), 1, light_green));
     objects.add(make_shared<sphere>(point3(13,6,0), 1, light));
+
+    return objects;
+}
+
+hittable_list terrain(){
+    hittable_list objects;
+
+    FastNoiseLite noise;
+    noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+
+    int w = 20, h = 20;
+    std::vector<std::vector<vec3>> elev;
+    for(int j = 0; j<w; j++){
+        elev.push_back(std::vector<vec3>());
+        for(int k = 0; k<h; k++){
+            auto x = (j-w/2)*3;
+            auto y = (k-h/2)*3;
+            elev[j].push_back(vec3(x, noise.GetNoise((float)x * 3, (float)y * 3) * 5, y));
+        }
+    }
+    auto ground = make_shared<lambertian>(color(0.6, 0.7, 0.4));
+    auto ground2 = make_shared<lambertian>(color(0.5, 0.7, 0.4));
+    for(int j = 0; j<w-1; j++){
+        for(int k = 0; k<h-1; k++){
+            objects.add(make_shared<triangle>(elev[j][k], elev[j+1][k], elev[j+1][k+1], ground));
+            objects.add(make_shared<triangle>(elev[j][k], elev[j][k+1], elev[j+1][k+1], ground2));
+        }
+    }
+    auto light = make_shared<diffuse_light>(color(2.2, 2.2, 2.2));
+
+    auto water = make_shared<metal>(color(0.7, 0.7, 0.9), 1);
+//    auto corner0 = point3(-w * 1.5,5.5,-h * 1.5);
+//    auto corner1 = point3(w * 1.5,5.5,-h * 1.5);
+//    auto corner2 = point3(-w * 1.5,5.5,h * 1.5);
+//    auto corner3 = point3(w * 1.5,5.5,h * 1.5);
+//    objects.add(make_shared<triangle>(
+//            corner0,
+//            corner1,
+//            corner3,
+//            light));
+//    objects.add(make_shared<triangle>(
+//            corner0,
+//            corner2,
+//            corner3,
+//            water));
+    objects.add(make_shared<triangle>(
+            point3(-90, -2.5,-30),
+            point3(30, -2.5,-30),
+            point3(30, -2.5,90),
+            water));
+
+//    objects.add(make_shared<triangle>(
+//            point3(-31, -1.5,-31),
+//            point3(-31, -1.5,31),
+//            point3(31, -1.5,31),
+//            water));
+
+
+    objects.add(make_shared<sphere>(point3(0,5,0), 1, light));
 
     return objects;
 }
@@ -131,7 +200,7 @@ public:
     }
     // World
     // bvh
-    hittable_list curr_world = night_glassy(); //random_scene();
+    bvh_node curr_world = bvh_node(terrain(), 0, 0); //night_glassy(); //random_scene();
 
     // Image
     int samples_per_pixel;
@@ -170,28 +239,26 @@ public:
             auto forward = unit_vector(cam.origin - cam.lookat);
             auto right = unit_vector(cross(vup, forward));
 
-            if(GetKey(olc::Key::W).bHeld) {
+            auto mult = 1.0;
+            if(GetKey(olc::Key::CTRL).bHeld) {
+                mult = 5.0;
+            }
+            if(GetKey(olc::Key::W).bHeld)
+                cam.origin -= forward * mult;
+            if(GetKey(olc::Key::S).bHeld)
+                cam.origin += forward * mult;
+            if(GetKey(olc::Key::A).bHeld)
+                cam.origin += -right * mult;
+            if(GetKey(olc::Key::D).bHeld)
+                cam.origin += right * mult;
+            if(GetKey(olc::Key::SPACE).bHeld)
+                cam.origin += vec3(0, 0.2, 0) * mult;
+            if(GetKey(olc::Key::SHIFT).bHeld)
+                cam.origin += vec3(0, -0.2, 0) * mult;
 
-                cam.origin -= forward;
-            }
-            if(GetKey(olc::Key::S).bHeld) {
-                cam.origin += forward;
-            }
-            if(GetKey(olc::Key::A).bHeld) {
-                cam.origin += -right;
-            }
-            if(GetKey(olc::Key::D).bHeld) {
-                cam.origin += right;
-            }
-            // cam.origin += right;
-
-            if(GetKey(olc::Key::SPACE).bHeld) {
-                cam.origin += vec3(0, 0.2, 0);
-            }
-            if(GetKey(olc::Key::SHIFT).bHeld) {
-                cam.origin += vec3(0, -0.2, 0);
-            }
             cam.recalculate();
+
+            std::cout << cam.origin << std::endl;
         }
 
         return true;
@@ -202,8 +269,13 @@ public:
             return color(0, 0, 0);
 
         hit_record rec;
-        if (!world.hit(r, 0.001, infinity, rec))
-            return background;
+
+        auto unit_r = unit_vector(r.direction());
+        if (!world.hit(r, 0.001, infinity, rec)) {
+            //if (unit_r.y() > 0)
+                return background * 3 * unit_r.z() + vec3(0.4, 0.4, 0.4);// * abs(unit_r.z() - 1);
+           // return vec3(0, 0, 0);
+        }
 
         // metal
         ray scattered;
@@ -226,18 +298,18 @@ public:
 
 int main()
 {
-    const int height = 1*108;
-    const int width = 1*192;
+    const int height = 2*108;
+    const int width = 2*192;
 
-    point3 look_from(26,7,6);
-    point3 look_at(0,2,0);
+    point3 look_from(-82.1527, 39.0637, -53.4905);
+    point3 look_at(0,-5,0);
 
     raycaster window(camera(height, width, 40.0, 0.0, (look_from-look_at).length(), 0, 0), height, width);
 
-    window.samples_per_pixel = 10; //20
-    window.max_depth = 10; //10
-    window.background = color(0,0,0);
-    window.background = color(0.5, 0.7, 1.0);
+    window.samples_per_pixel = 20; //20
+    window.max_depth = 19; //10
+    //window.background = color(0,0,0);
+    window.background = color(0.7, 0.5, 0.2);
 
     window.cam.origin = look_from;
     window.cam.lookat = look_at;

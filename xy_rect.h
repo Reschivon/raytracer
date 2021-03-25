@@ -41,9 +41,6 @@ bool xy_rect::hit(const ray &r, double t_min, double t_max, hit_record &rec) con
     rec.mat_ptr = mp;
     rec.p = r.at(t);
 
-
-
-
     return true;
 }
 

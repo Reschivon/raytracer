@@ -122,6 +122,14 @@ inline vec3 cross(const vec3 &u, const vec3 &v) {
                 u.e[0] * v.e[1] - u.e[1] * v.e[0]);
 }
 
+inline double max(double a, double b, double c){
+    return std::max(a, std::max(b, c));
+}
+
+inline double min(double a, double b, double c){
+    return std::min(a, std::min(b, c));
+}
+
 inline vec3 unit_vector(vec3 v) {
     return v / v.length();
 }
